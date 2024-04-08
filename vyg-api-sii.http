@@ -1,0 +1,6 @@
+@vyg_api_sii_HostAddress = http://localhost:5090
+
+GET {{vyg_api_sii_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
