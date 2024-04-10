@@ -4,4 +4,5 @@
 [Oo]bj/
 [Bb]in/*.*
 [Oo]bj/*.*
-
+*.tar
+*.gz

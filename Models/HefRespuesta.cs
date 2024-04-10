@@ -9,3 +9,23 @@ public class HefRespuesta
     public string? Trackid { get; set; } = null;
     public object? Resultado { get; set; }
 }
+
+public enum HefOrigen
+{
+    Emitidos = 0,
+    Recibidos = 1
+}    
+
+public class credencialSII
+{
+    public int rut { get; set; }
+    public string DV { get; set; } = string.Empty;
+    public string rutConDV { get; set; } = string.Empty;
+    public string claveSII { get; set; } = string.Empty;
+    public string cookie { get; set; } = string.Empty;
+    public string token { get; set; } = string.Empty;
+    public string conversationId { get; set; } = string.Empty;
+    public string transactionId { get; set; } = string.Empty;
+    public string dtPC { get; set; } = string.Empty;
+    public string status { get; set; } = string.Empty;
+}
