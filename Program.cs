@@ -8,8 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<HefSignatureExtension>();
 
 // Add services to the container.
-builder.Services.AddScoped<AuthenticationService>();
-builder.Services.AddScoped<CesionService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<BooksService>();
+builder.Services.AddScoped<TransferService>();
 builder.Services.AddScoped<ConsultasService>();
 builder.Services.AddScoped<PublicacionService>();
 builder.Services.AddScoped<SIIService>();
@@ -18,7 +19,10 @@ builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.EnableAnnotations();
+});
 
 var app = builder.Build();
 
@@ -34,6 +38,8 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapBooksEndpoints();
+app.MapDocsEndpoints();
 app.MapTransEndpoints();
 
 app.Run();

@@ -6,16 +6,6 @@ using vyg_api_sii.Models;
 namespace vyg_api_sii.Services;
 public class ConsultasService
 {
-    /// <summary>
-    /// Recupera los datos del contribuyente usando las credenciales de la empresa
-    /// </summary>
-    /// <param name="credenciales">Credenciales para la consulta</param>
-    /// <remarks>
-    /// semilla    : https://misiir.sii.cl/cgi_misii/siihome.cgi
-    /// </remarks>
-    /// <returns>
-    /// Documento json con los datos del contribuyente en formato string
-    /// </returns>
     public static HefRespuesta SII_Datos_Generales(string credenciales)
     {
         ////
@@ -100,11 +90,6 @@ public class ConsultasService
         return resp;
 
     }
-
-    /// <summary>
-    /// Recupera los datos del certificado
-    /// </summary>
-    /// <returns></returns>
     public static HefRespuesta RecuperarDatosCertificado(string credenciales)
     {
         ////
@@ -144,12 +129,6 @@ public class ConsultasService
         return resp;
 
     }
-
-    /// <summary>
-    /// Consulta al SII por el esatdo de un envio al SII (trackid)
-    /// </summary>
-    /// <param name="certificado"></param>
-    /// <returns></returns>
     public static HefRespuesta RecuperarEstadoTrackid(string token, string rutEmpresa, long trackid)
     {
         ////
@@ -277,13 +256,6 @@ public class ConsultasService
         return resp;
 
     }
-
-
-    /// <summary>
-    /// Consulta al SII por el estado de una cesión
-    /// </summary>
-    /// <param name="certificado"></param>
-    /// <returns></returns>
     public static HefRespuesta RecuperarEstadoCesion(string token, string rutEmpresa, string tipoDoc, string folioDoc, string idCesion="")
     {
         ////

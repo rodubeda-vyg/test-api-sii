@@ -374,15 +374,13 @@ public class SIIService
         //// Regrese el valor de retorno
         return resp;
     }
-    public async Task<HefRespuesta> RecuperaDocumentosAecs_RecibidosNew(string credenciales, string rutEmpresa, string tipoDte, string folio)
+    public async Task<DocumentDownload> RecuperaDocumentosAecs_RecibidosNew(string cookie, string rutEmpresa, string tipoDte, string folio)
     {
-        HefRespuesta resp = new HefRespuesta();
-        resp.Mensaje = "RecuperaDocumentosAecs_Recibidos";
+        DocumentDownload resp = new DocumentDownload();
+        resp.Success = false;
 
         string uriSIITarget = "https://palena.sii.cl/cgi_rtc/RTC/RTCDescargarXmlCons.cgi";
         string uriSIIRefere = "https://palena.sii.cl/rtc/RTC/RTCConsultas.html";
-
-        string sDocumento = string.Empty;
 
         try
         {
@@ -404,7 +402,7 @@ public class SIIService
                 client.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
                 client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36 Edg/91.0.864.37");
                 client.DefaultRequestHeaders.Add("Referer", uriSIIRefere);
-                client.DefaultRequestHeaders.Add("Cookie", credenciales);
+                client.DefaultRequestHeaders.Add("Cookie", cookie);
 
                 var postData = new List<KeyValuePair<string, string>>();
                 postData.Add(new KeyValuePair<string, string>("rut_emisor", rutEmpresa.Split('-')[0]));
@@ -419,24 +417,42 @@ public class SIIService
                 HttpResponseMessage response = await client.PostAsync(uriSIITarget, content);
 
                 if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    resp.Description = "No fue posible comunicarse con el servidor remoto.";
                     throw new Exception("No fue posible comunicarse con el servidor remoto.");
+                }
 
                 //sDocumento = await response.Content.ReadAsStringAsync();
-                byte[] bytes = await response.Content.ReadAsByteArrayAsync();
-                sDocumento = Encoding.GetEncoding("ISO-8859-1").GetString(bytes);
-            }
+                byte[] FileAsByte = await response.Content.ReadAsByteArrayAsync();
+                if (FileAsByte.Length == 0)
+                {
+                    resp.Description = "No se encontró el documento solicitado.";
+                    throw new Exception("No se encontró el documento solicitado.");
+                }
 
-            resp.EsCorrecto = true;
-            resp.Mensaje = "Proceso ejecutado correctamente";
-            resp.Resultado = sDocumento;
+                Encoding encoding = Encoding.GetEncoding("ISO-8859-1");
+                string contentType = encoding.WebName;
+                string FileAsString = encoding.GetString(FileAsByte);
+                string FileAsBase64 = Convert.ToBase64String(FileAsByte);
+
+                resp.Success = true;
+                resp.Description = "AEC Recuperado";
+                resp.FileName = $"AEC-{rutEmpresa}-{tipoDte}-{folio}.xml";
+                resp.FileType = "AEC / XML";
+                resp.Encoding = contentType;
+                resp.FileAsBase64 = FileAsBase64;
+
+                await File.WriteAllTextAsync($"Files/AEC_{rutEmpresa}_{tipoDte}_{folio}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xml", FileAsString, Encoding.GetEncoding("ISO-8859-1"));
+
+                // documentoDTE.DTEFileInByte = Encoding.GetEncoding("ISO-8859-1").GetBytes(result.Resultado?.ToString()!);
+                // documentoDTE.DTEFileBase64 = Convert.ToBase64String(documentoDTE.DTEFileInByte);
+
+            }
         }
         catch (Exception ex)
         {
-            resp.EsCorrecto = false;
-            resp.Detalle = ex.Message;
-            resp.Resultado = null;
+            Console.WriteLine(ex.Message);
         }
-
         return resp;
     }
     public async Task<HefRespuesta> RecuperarDocumentoNew(string rutEmpresa, string token, string TipoDTE, string Folio, string FchDesde, HefOrigen Origen)
@@ -500,189 +516,6 @@ public class SIIService
             resp.Resultado = null;
         }
 
-        return resp;
-    }
-    public async Task<credencialSII> GetTokenSimple(credencialSII credencial)
-    {
-        credencialSII respuesta = new credencialSII();
-        respuesta = credencial;
-        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
-        string url = "https://zeusr.sii.cl/cgi_AUT2000/CAutInicio.cgi";
-        try
-        {
-            HttpWebRequest? request = (HttpWebRequest)WebRequest.Create(url);
-            request.AllowAutoRedirect = true;
-            request.Method = "POST";
-            request.Accept = "text / html, application / xhtml + xml, */*";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.Host = "zeusr.sii.cl";
-
-            string bodyData = string.Format("rut={0}&dv={1}&referencia=https%3A%2F%2Fmisiir.sii.cl%2Fcgi_misii%2Fsiihome.cgi&rutcntr={2}&clave={3}"
-                , respuesta.rut.ToString()
-                , respuesta.DV
-                , respuesta.rutConDV
-                , respuesta.claveSII
-                );
-
-            byte[] bodyByte = Encoding.UTF8.GetBytes(bodyData);
-            request.ContentLength = bodyByte.Length;
-
-            Stream postStream = request.GetRequestStream();
-            postStream.Write(bodyByte, 0, bodyByte.Length);
-            postStream.Flush();
-            postStream.Close();
-
-            HttpWebResponse? response = (HttpWebResponse)request.GetResponse();
-
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                bool HasCookies = response.Headers.AllKeys.Contains("Set-Cookie");
-                if (!HasCookies) {
-                    respuesta.status = respuesta.status + " / La consulta actual no regresó cookies";
-                    respuesta.token = "Error";
-                    throw new Exception(respuesta.status);
-                }
-                string? cookies = response.Headers["Set-Cookie"];
-                if (string.IsNullOrEmpty(cookies)) {
-                    respuesta.status = respuesta.status + " / La consulta actual regresó cookies sin valores";
-                    respuesta.token = "Error";
-                    throw new Exception(respuesta.status);
-                }
-                string[] Items = cookies.Split(',');
-                string sCookies = string.Empty;
-                foreach (string Item in Items)
-                {
-                    sCookies += Item.Split(';')[0] + "; ";
-                }
-
-                sCookies = sCookies.Substring(0, sCookies.Length - 2);
-                respuesta.cookie = sCookies;
-                string tokenSII = string.Empty;
-                Match matchToken = Regex.Match(sCookies, @"TOKEN=([\w\d]+);");
-                if (matchToken.Success) { tokenSII = matchToken.Groups[1].Value; }
-                respuesta.token = tokenSII;
-                respuesta.conversationId = matchToken.Groups[1].Value;
-                respuesta.transactionId = Guid.NewGuid().ToString();
-                respuesta.dtPC = "20$69871136_496h103vSNCSJEFFRMOVPUCHRDPRHDHKFUODMPSB-0e0";
-
-                respuesta.status = "Cookies OK";
-            }
-            else
-            {
-                respuesta.cookie = string.Empty;
-                respuesta.status = "Bad Request.";
-                respuesta.token = "Error";
-                throw new Exception(respuesta.status);
-            }
-
-            request = null;
-            response.Close();
-            response = null;
-
-        }
-        catch (Exception ex)
-        {
-            respuesta.status = respuesta.status + " / " + ex.Message;
-        }
-
-        await Task.Delay(1000);
-        return respuesta;
-
-    }
-    public HefRespuesta GetTokenCert(X509Certificate2 certificado)
-    {
-        ////
-        //// Cree la entidad para recuperar la respuesta
-        HefRespuesta resp = new HefRespuesta();
-        resp.Mensaje = "GetTokenCert";
-
-        ////
-        //// Target donde apunta la autenticación del SII
-        string uriSIITarget = "https://herculesr.sii.cl/cgi_AUT2000/CAutInicio.cgi?";
-        uriSIITarget += "https://misiir.sii.cl/cgi_misii/siihome.cgi";
-
-        ////
-        //// Inicie el proceso
-        try
-        {
-
-            ////
-            //// Consulta al SII para autenticar al cliente actual ( certificado )
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uriSIITarget);
-            req.PreAuthenticate = true;
-            req.AllowAutoRedirect = true;
-            req.ClientCertificates.Add(certificado);
-            req.Method = "POST";
-            req.ContentType = "application/x-www-form-urlencoded";
-
-            ////
-            //// Escriba la consulta ( POST ) y su largo en bytes
-            string postData = "referencia=https%3A%2F%2Fmisiir.sii.cl%2Fcgi_misii%2Fsiihome.cgi";
-            byte[] postBytes = Encoding.UTF8.GetBytes(postData);
-            req.ContentLength = postBytes.Length;
-
-            ////
-            //// Escriba los bytes en el request stream
-            Stream postStream = req.GetRequestStream();
-            postStream.Write(postBytes, 0, postBytes.Length);
-            postStream.Flush();
-            postStream.Close();
-
-            ////
-            //// Recupere la respuesta de la consulta ( response )
-            HttpWebResponse response = (HttpWebResponse)req.GetResponse();
-
-            ////
-            //// Recupere la respuesta del SII
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception("No fue posible comunicarse con el servidor remoto.");
-
-            ////
-            //// Recupere las cookies generadas por el SII
-            bool HasCookies = response.Headers.AllKeys.Contains("Set-Cookie");
-            if (!HasCookies)
-                throw new Exception("La consulta actual no regresó cookies.");
-
-            ////
-            //// Recupere las cookies del proceso
-            string cookies = response.Headers["Set-Cookie"]!;
-            if (string.IsNullOrEmpty(cookies))
-                throw new Exception("La consulta actual no regresó ninguna cookies. ( cookies= null )");
-
-            ////
-            //// Cree el arreglo de cookies
-            string[] Items = cookies.Split(',');
-
-            ////
-            //// Por cada item del arreglo solo recupere el value de la cookie
-            string sCookies = string.Empty;
-            foreach (string Item in Items)
-            {
-                sCookies += Item.Split(';')[0] + "; ";
-            }
-
-            ////
-            //// Limpie la cadena de los caracteres no validos
-            sCookies = sCookies.Substring(0, sCookies.Length - 2);
-
-            ////
-            //// Complete la respuesta del proceso
-            resp.EsCorrecto = true;
-            resp.Mensaje = "Conectar()";
-            resp.Detalle = "Operación ejecutada correctamente.";
-            resp.Resultado = sCookies;
-
-        }
-        catch (Exception Ex)
-        {
-            resp.EsCorrecto = false;
-            resp.Detalle = "No fue posible realizar conección al SII.\r\n" + Ex.Message;
-            resp.Resultado = null;
-        }
-
-        ////
-        //// Regrese el valor de retorno
         return resp;
     }
 }

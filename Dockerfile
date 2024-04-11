@@ -27,6 +27,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 USER root
+RUN mkdir -p /app/Files
 RUN chown -R appuser /app/
 USER appuser
 

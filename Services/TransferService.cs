@@ -9,7 +9,7 @@ using vyg_api_sii.Models;
 using System.Xml;
 
 namespace vyg_api_sii.Services;
-public class CesionService
+public class TransferService
 {
     public TipoCesion TipoDocumento { get; set; }
     private CesionDTO? _cesionDTO { get; set; }	
@@ -19,8 +19,6 @@ public class CesionService
     private string? _tmstActual { get; set; } = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
     private string? _credenciales { get; set; }
     public string? _token { get; set; }
-
-    // Generar Cesion (workflow cesion)
     public HefRespuesta GeneraCesion(CesionDTO consulta)
     {
         HefRespuesta resp = new HefRespuesta();
@@ -85,14 +83,14 @@ public class CesionService
             this._certificado = certificado;
 
             // get credenciales & token
-            HefRespuesta respCreden = AuthenticationService.GetCredenciales(this._certificado);
+            HefRespuesta respCreden = AuthService.GetCredenciales(this._certificado);
             if (!respCreden.EsCorrecto)
                 throw new Exception($"No fue posible recuperar el token del certificado. " +
                     $"'{respCreden.Detalle}'");
 
             this._credenciales = respCreden.Resultado as string;
 
-            HefRespuesta respToken = AuthenticationService.GetToken(this._certificado);
+            HefRespuesta respToken = AuthService.GetToken(this._certificado);
             if (!respToken.EsCorrecto)
                     throw new Exception($"No fue posible recuperar el token del certificado. " +
                         $"'{respToken.Detalle}'");
@@ -148,14 +146,14 @@ public class CesionService
             this._certificado = consulta.CertificadoBase64!.HefGetCertificate(consulta.Heslo!);
             
             //// Recuperar el token del certificado
-            HefRespuesta respCreden = AuthenticationService.GetCredenciales(this._certificado);
+            HefRespuesta respCreden = AuthService.GetCredenciales(this._certificado);
             if (!respCreden.EsCorrecto)
                 throw new Exception($"No fue posible recuperar el token del certificado. " +
                     $"'{respCreden.Detalle}'");
 
             this._credenciales = respCreden.Resultado as string;
 
-            HefRespuesta respToken = AuthenticationService.GetToken(this._certificado);
+            HefRespuesta respToken = AuthService.GetToken(this._certificado);
             if (!respToken.EsCorrecto)
                 throw new Exception($"No fue posible recuperar el token del certificado. " +
                     $"'{respToken.Detalle}'");
@@ -197,14 +195,14 @@ public class CesionService
 
         ////
         //// Recuperar el token del certificado
-        HefRespuesta respCreden = AuthenticationService.GetCredenciales(this._certificado);
+        HefRespuesta respCreden = AuthService.GetCredenciales(this._certificado);
         if (!respCreden.EsCorrecto)
             throw new Exception($"No fue posible recuperar el token del certificado. " +
                 $"'{respCreden.Detalle}'");
 
         this._credenciales = respCreden.Resultado as string;
 
-        HefRespuesta respToken = AuthenticationService.GetToken(this._certificado);
+        HefRespuesta respToken = AuthService.GetToken(this._certificado);
         if (!respToken.EsCorrecto)
             throw new Exception($"No fue posible recuperar el token del certificado. " +
                 $"'{respToken.Detalle}'");
@@ -755,5 +753,4 @@ public class CesionService
         //// regrese el valor de retorno
         return resp;
     }
-
 }

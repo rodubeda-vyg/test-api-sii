@@ -1,5 +1,3 @@
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.AspNetCore.Http.Metadata;
 using Swashbuckle.AspNetCore.Annotations;
 using vyg_api_sii.DTOs;
 using vyg_api_sii.Models;
@@ -11,57 +9,68 @@ public static class TransEndpoint
     public static RouteGroupBuilder MapTransEndpoints(
         this IEndpointRouteBuilder routes)
     {
+        string[] EndpointTag = new[] { "Transfer Document" };
         var group = routes.MapGroup("/api/sii/transfer");
         
-        group.MapPost(
-            "/document",
-            async (CesionDTO cederRequest, CesionService cederService) =>
-            {
-                HefRespuesta resp = new HefRespuesta
+        group
+            .MapPost(
+                "/document",
+                async (CesionDTO cederRequest, TransferService transferService) =>
                 {
-                    Mensaje = "transfer/document"
-                };
+                    HefRespuesta resp = new HefRespuesta
+                    {
+                        Mensaje = "transfer/document"
+                    };
 
-                try 
-                {
-                    resp = cederService.GeneraCesion(cederRequest!);
+                    try 
+                    {
+                        resp = transferService.GeneraCesion(cederRequest!);
+                    }
+                    catch (Exception err)
+                    {
+                        resp.EsCorrecto = false;
+                        resp.Detalle = err.Message;
+                        resp.Resultado = null;
+                        return Results.BadRequest(resp);
+                    }
+
+                    await Task.CompletedTask;
+                    return Results.Ok(resp) ;
                 }
-                catch (Exception err)
+            )
+            .WithMetadata(
+                new SwaggerOperationAttribute { Tags = EndpointTag }
+            );
+
+        group
+            .MapPost(
+                "/trackid/status",
+                async (StatusTrackIdDTO trackId, TransferService transferService) =>
                 {
-                    resp.EsCorrecto = false;
-                    resp.Detalle = err.Message;
-                    resp.Resultado = null;
-                    return Results.BadRequest(resp);
+                    HefRespuesta resp = new HefRespuesta
+                    {
+                        Mensaje = "/transfer/trackid"
+                    };
+
+                    try 
+                    {
+                        resp = transferService.ConsultarTrackId(trackId!);
+                    }
+                    catch (Exception err)
+                    {
+                        resp.EsCorrecto = false;
+                        resp.Detalle = err.Message;
+                        resp.Resultado = null;
+                        return Results.BadRequest(resp);
+                    }
+
+                    await Task.CompletedTask;
+                    return Results.Ok(resp) ;
                 }
-
-                await Task.CompletedTask;
-                return Results.Ok(resp) ;
-            });
-
-        group.MapPost(
-            "/trackid/status",
-            async (StatusTrackIdDTO trackId, CesionService cederService) =>
-            {
-                HefRespuesta resp = new HefRespuesta
-                {
-                    Mensaje = "/transfer/trackid"
-                };
-
-                try 
-                {
-                    resp = cederService.ConsultarTrackId(trackId!);
-                }
-                catch (Exception err)
-                {
-                    resp.EsCorrecto = false;
-                    resp.Detalle = err.Message;
-                    resp.Resultado = null;
-                    return Results.BadRequest(resp);
-                }
-
-                await Task.CompletedTask;
-                return Results.Ok(resp) ;
-            });
+            )
+            .WithMetadata(
+                new SwaggerOperationAttribute { Tags = EndpointTag }
+            );
 
         return group;
     }

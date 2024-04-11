@@ -1,5 +1,3 @@
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.AspNetCore.Http.Metadata;
 using Swashbuckle.AspNetCore.Annotations;
 using vyg_api_sii.DTOs;
 using vyg_api_sii.Models;
@@ -11,36 +9,72 @@ public static class DocsEndpoint
     public static RouteGroupBuilder MapDocsEndpoints(
         this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/sii/docs");
+        string[] EndpointTag = new[] { "Documents" };
+        var group = routes.MapGroup("/api/sii/document");
         
+        group
+            .MapPost(
+                "/status",
+                async (StatusCesionDTO documento, TransferService transferService) =>
+                {
+                    HefRespuesta resp = new HefRespuesta
+                    {
+                        Mensaje = "EstadoDocumento"
+                    };
+
+                    try 
+                    {
+                        resp = transferService.ConsultarEstadoCesion(documento!);
+                    }
+                    catch (Exception err)
+                    {
+                        resp.EsCorrecto = false;
+                        resp.Detalle = err.Message;
+                        resp.Resultado = null;
+                        return Results.BadRequest(resp);
+                    }
+
+                    await Task.CompletedTask;
+                    return Results.Ok(resp);
+                }
+            )
+            .WithMetadata(
+                new SwaggerOperationAttribute { Tags = EndpointTag }
+            );
+
         // get xml from sii
+
+
         // get aec from sii
-        
-
-        group.MapPost(
-            "/status",
-            async (StatusCesionDTO documento, CesionService cederService) =>
-            {
-                HefRespuesta resp = new HefRespuesta
+        group
+            .MapPost(
+                "/download/aec",
+                async (DocumentAECDTO documento, SIIService siiService) =>
                 {
-                    Mensaje = "EstadoDocumento"
-                };
+                    DocumentDownload resp = new DocumentDownload();
 
-                try 
-                {
-                    resp = cederService.ConsultarEstadoCesion(documento!);
+                    try 
+                    {
+                        resp = await siiService.RecuperaDocumentosAecs_RecibidosNew(
+                            documento.Credencial!,
+                            documento.RutEmisor!,
+                            documento.TipoDTE!,
+                            documento.Folio!
+                        );
+                    }
+                    catch (Exception err)
+                    {
+                        Console.WriteLine(err);
+                        return Results.BadRequest(resp);
+                    }
+                    return Results.Ok(resp);
                 }
-                catch (Exception err)
-                {
-                    resp.EsCorrecto = false;
-                    resp.Detalle = err.Message;
-                    resp.Resultado = null;
-                    return Results.BadRequest(resp);
-                }
+            )
+            .WithMetadata(
+                new SwaggerOperationAttribute { Tags = EndpointTag }
+            );
 
-                await Task.CompletedTask;
-                return Results.Ok(resp);
-            });
+                
 
         return group;
     }
