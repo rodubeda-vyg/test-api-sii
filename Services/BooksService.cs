@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using vyg_api_sii.Models;
 
@@ -11,7 +7,7 @@ namespace vyg_api_sii.Services;
 
 public class BooksService
 {
-    public async Task<List<BookVenta>> GetBookVentaAsync(credencialSII credencial)
+    public async Task<List<BookVenta>> GetBookVentaAsync(credencialSII credencial, int periodoDTE)
     {
         List<BookVenta> respuesta = new List<BookVenta>();
         
@@ -22,33 +18,36 @@ public class BooksService
         // Mientras obtendra información del mes actual y anterior
         
         // Ultimos dos meses
-        int periodoDTE;
-        periodoDTE = DateTime.Now.Year * 100 + DateTime.Now.Month;
+        // int periodoDTE;
+        // periodoDTE = DateTime.Now.Year * 100 + DateTime.Now.Month;
 
         // Obtener información por periodo/documento y guardar datos en BD
         respuesta.Clear();
         foreach (var tipo in tiposDTE) {
             var RecuperaLibro = await GetBookVenta(credencial, tipo, periodoDTE);
             respuesta.AddRange(RecuperaLibro);
-            await Task.Delay(2000);
+            await Task.Delay(500);
         }
         return respuesta;
     }
-    public async Task<List<BookCompra>> GetBookCompraAsync(credencialSII credencial)
+    public async Task<List<BookCompra>> GetBookCompraAsync(credencialSII credencial, int periodoDTE)
     {
         List<BookCompra> respuesta = new List<BookCompra>();
-        int periodoDTE = DateTime.Now.Year * 100 + DateTime.Now.Month;
+        // int periodoDTE;
+        // peridoDTE = DateTime.Now.Year * 100 + DateTime.Now.Month;
         int[] tiposDTE = { 33, 34, 61, 56 };
         string[] estadoDocumento = { "REGISTRO", "PENDIENTE" };
         foreach (var tipoDTE in tiposDTE)
         {
             var libroCompraSII = await GetBookCompra(credencial, periodoDTE, tipoDTE, estadoDocumento[0]);
+            await Task.Delay(500);
             if (libroCompraSII.Count > 0)
             {
                 respuesta.AddRange(libroCompraSII);
             }
 
             libroCompraSII = await GetBookCompra(credencial, periodoDTE, tipoDTE, estadoDocumento[1]);
+            await Task.Delay(500);
             if (libroCompraSII.Count > 0)
             {
                 respuesta.AddRange(libroCompraSII);
@@ -190,6 +189,7 @@ public class BooksService
                 {
                     var bodyResponse = await reader.ReadToEndAsync();
                     responseSII = JsonConvert.DeserializeObject<RootResponseCompra>(bodyResponse)!;
+                    //responseSII = System.Text.Json.JsonSerializer.Deserialize<RootResponseCompra>(bodyResponse)!;
                 }
             }
 
@@ -200,7 +200,14 @@ public class BooksService
                     BookCompra detalle = new BookCompra();
                     detalle = compras;
                     respuesta.Add(detalle);
-                    respuesta.ForEach( x => x.detRutReceptor = credencial.rutConDV);
+                    respuesta.ForEach( x => 
+                        {
+                            x.detRutReceptor = credencial.rutConDV;
+                            x.detTipoDoc = tipoDTE.ToString();
+                            x.detPcarga = periodo.ToString();
+                            x.EstadoDocumento = estadoDocumento;
+                        }
+                    );
                 };
             }
 

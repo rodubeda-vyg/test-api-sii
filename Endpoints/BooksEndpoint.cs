@@ -46,7 +46,7 @@ public static class BooksEndpoint
 
                     try 
                     {
-                        resp = await booksService.GetBookVentaAsync(credencialSII);
+                        resp = await booksService.GetBookVentaAsync(credencialSII, credencial.Periodo);
                     }
                     catch (Exception err)
                     {
@@ -86,7 +86,7 @@ public static class BooksEndpoint
 
                     try 
                     {
-                        resp = await booksService.GetBookCompraAsync(credencialSII);
+                        resp = await booksService.GetBookCompraAsync(credencialSII, credencial.Periodo);
                     }
                     catch (Exception err)
                     {

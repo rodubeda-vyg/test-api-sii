@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using vyg_api_sii.Models;
 
 namespace vyg_api_sii.Services;
-public class SIIService
+public partial class SIIService
 {
     public static HefRespuesta SII_Datos_Generales(string credenciales)
     {
@@ -435,14 +435,25 @@ public class SIIService
                 string FileAsString = encoding.GetString(FileAsByte);
                 string FileAsBase64 = Convert.ToBase64String(FileAsByte);
 
-                resp.Success = true;
-                resp.Description = "AEC Recuperado";
-                resp.FileName = $"AEC-{rutEmpresa}-{tipoDte}-{folio}.xml";
-                resp.FileType = "AEC / XML";
-                resp.Encoding = contentType;
-                resp.FileAsBase64 = FileAsBase64;
-
-                await File.WriteAllTextAsync($"Files/AEC_{rutEmpresa}_{tipoDte}_{folio}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xml", FileAsString, Encoding.GetEncoding("ISO-8859-1"));
+                if (MyRegex().IsMatch(FileAsString))
+                {
+                    resp.Success = false;
+                    resp.Description = "AEC no pertenece al rut empresa asociado al token.";
+                    resp.FileName = null;
+                    resp.FileType = null;
+                    resp.Encoding = null;
+                    resp.FileAsBase64 = null;
+                }
+                else 
+                {
+                    resp.Success = true;
+                    resp.Description = "AEC Recuperado";
+                    resp.FileName = $"AEC_{rutEmpresa}_{tipoDte}_{folio}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xml";
+                    resp.FileType = "AEC / XML";
+                    resp.Encoding = contentType;
+                    resp.FileAsBase64 = FileAsBase64;
+                    await File.WriteAllTextAsync($"Files/AEC_{rutEmpresa}_{tipoDte}_{folio}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xml", FileAsString, Encoding.GetEncoding("ISO-8859-1"));
+                }
 
                 // documentoDTE.DTEFileInByte = Encoding.GetEncoding("ISO-8859-1").GetBytes(result.Resultado?.ToString()!);
                 // documentoDTE.DTEFileBase64 = Convert.ToBase64String(documentoDTE.DTEFileInByte);
@@ -518,4 +529,7 @@ public class SIIService
 
         return resp;
     }
+
+    [GeneratedRegex("^<!DOCTYPE HTML PUBLIC")]
+    private static partial Regex MyRegex();
 }

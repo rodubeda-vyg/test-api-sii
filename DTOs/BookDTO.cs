@@ -7,4 +7,6 @@ public class BookDTO
     public string? Rut { get; set; }
     [Required]
     public string? Cookie { get; set; }
+    [Required]
+    public int Periodo { get; set; }
 }
